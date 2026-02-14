@@ -1,0 +1,33 @@
+youtube:
+  api_key: "YOUR_YOUTUBE_API_KEY_HERE"
+  
+database:
+  url: "sqlite:///data/youtube_analytics.db"
+  
+models:
+  engagement_predictor:
+    model_type: "xgboost"
+    params:
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.1
+      random_state: 42
+    
+  bandit:
+    algorithm: "thompson_sampling"
+    params:
+      alpha: 1.0
+      beta: 1.0
+      
+scheduling:
+  top_k_recommendations: 3
+  confidence_threshold: 0.7
+  
+features:
+  text_embedding:
+    model: "all-MiniLM-L6-v2"
+    max_length: 512
+    
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
