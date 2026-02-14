@@ -79,22 +79,16 @@ class FeatureEngineer:
         """
         df = df.copy()
         
-        # Engagement rates (handle division by zero)
-        df['like_rate'] = df['likes'] / (df['views'] + 1)
-        df['comment_rate'] = df['comments'] / (df['views'] + 1)
-        df['engagement_rate'] = (df['likes'] + df['comments']) / (df['views'] + 1)
+        # Engagement rates (vectorized)
+        views_safe = df['views'] + 1
+        df['like_rate'] = df['likes'] / views_safe
+        df['comment_rate'] = df['comments'] / views_safe
+        df['engagement_rate'] = (df['likes'] + df['comments']) / views_safe
         
-        # Log transformations for skewed distributions
+        # Log transformations
         df['log_views'] = np.log1p(df['views'])
         df['log_likes'] = np.log1p(df['likes'])
         df['log_comments'] = np.log1p(df['comments'])
-        
-        # Engagement velocity (if we have time-series data)
-        if 'published_at' in df.columns:
-            df = df.sort_values('published_at')
-            df['views_per_hour'] = df['views'] / (
-                (datetime.utcnow() - df['published_at']).dt.total_seconds() / 3600 + 1
-            )
         
         return df
     
@@ -318,3 +312,48 @@ class FeatureEngineer:
         # This would need to be implemented based on the actual features created
         # For now, return a placeholder
         return ['feature_names_would_be_here']
+    
+    def save(self, filepath: str) -> None:
+        """Save feature engineer to disk.
+        
+        Args:
+            filepath: Path to save feature engineer
+        """
+        import pickle
+        import os
+        
+        if not self.is_fitted:
+            raise ValueError("Feature engineer must be fitted before saving")
+        
+        feature_data = {
+            'embedding_model_name': self.embedding_model_name,
+            'category_encoder': self.category_encoder,
+            'scaler': self.scaler,
+            'tfidf_vectorizer': self.tfidf_vectorizer,
+            'is_fitted': self.is_fitted
+        }
+        
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, 'wb') as f:
+            pickle.dump(feature_data, f)
+        
+        logger.info(f"Feature engineer saved to {filepath}")
+    
+    def load(self, filepath: str) -> None:
+        """Load feature engineer from disk.
+        
+        Args:
+            filepath: Path to load feature engineer from
+        """
+        import pickle
+        
+        with open(filepath, 'rb') as f:
+            feature_data = pickle.load(f)
+        
+        self.embedding_model_name = feature_data['embedding_model_name']
+        self.category_encoder = feature_data['category_encoder']
+        self.scaler = feature_data['scaler']
+        self.tfidf_vectorizer = feature_data['tfidf_vectorizer']
+        self.is_fitted = feature_data['is_fitted']
+        
+        logger.info(f"Feature engineer loaded from {filepath}")
